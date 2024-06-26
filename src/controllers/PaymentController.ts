@@ -1,23 +1,23 @@
 import { Request, Response } from "express"
 import axios, { AxiosError } from "axios"
 import { checkData } from "../helpers/checkData"
+import dotenv from "dotenv"
 
-const pbToken =
-  "Bearer f4e9071a-4bb9-4060-8757-759cf8b0b20564cdec3640fb9ac8453dbc67a15adebfde6e-2625-4e23-950c-4f5956856ce7"
+dotenv.config()
 
-axios.defaults.headers.Authorization = pbToken
+axios.defaults.headers.Authorization = process.env.pbToken as string
+const pbUrl = process.env.pbUrl as string
 
 export const getQrCode = async (req: Request, res: Response) => {
   try {
     const order = req.body
-    console.log(order)
 
     const dataCheck = checkData(order)
 
     if (dataCheck.ok) {
       // ...
       await axios
-        .post(`https://sandbox.api.pagseguro.com/orders`, order)
+        .post(pbUrl, order)
         .then((response) => {
           const info = response.data
 
