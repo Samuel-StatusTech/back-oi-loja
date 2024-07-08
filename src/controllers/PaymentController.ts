@@ -58,6 +58,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
 
     if (order.charges.length > 0) {
       const payment = order.charges[0]
+      const orderId = order.reference_id
       const status = payment.status
       const amount = payment.amount.value
 
@@ -66,7 +67,13 @@ export const orderUpdate = async (req: Request, res: Response) => {
       const data = { status, amount, message }
 
       // socket.emit...
-      io.emit("orderUpdate", data)
+      // filter by socket.id
+      const sockets = await io.fetchSockets()
+      const client = sockets.find((s) => s.id === orderId)
+
+      if (client) {
+        client.emit("orderUpdate", data)
+      }
     }
 
     res.status(200).json({ ok: true })

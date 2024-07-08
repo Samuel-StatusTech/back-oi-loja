@@ -23,18 +23,12 @@ app.use("*", (req: Request, res: Response) => {
 
 const server = createServer(app)
 
-server.listen(port, () => {
-  console.log(`[server]: Server is running at port: ${port}`)
-})
+server.listen(port)
 
 export const io = new Server(server, {
   cors: {
-    origin: process.env.NODE_ENV === "production" ? undefined : "*",
+    origin: "*",
   },
-})
-
-io.on("connection", (socket) => {
-  console.log("user connected", socket.id)
 })
 
 export default app
