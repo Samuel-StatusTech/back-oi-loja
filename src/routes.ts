@@ -9,4 +9,6 @@ routes.get("/ping", (req: Request, res: Response) => {
 
 routes.post("/orders/qrcode", PaymentController.getQrCode)
 
+routes.post("/orders/orderUpdate", PaymentController.orderUpdate)
+
 export default routes
