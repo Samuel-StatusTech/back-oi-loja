@@ -10,6 +10,34 @@ dotenv.config()
 axios.defaults.headers.Authorization = process.env.pbToken as string
 const pbUrl = process.env.pbUrl as string
 
+const registerCheckout = async () => {
+  // ...
+}
+
+const splits = {
+  method: "FIXED",
+  receivers: [
+    // master
+    {
+      account: {
+        id: "ACCO_12345",
+      },
+      amount: {
+        value: 6000,
+      },
+    },
+    // client
+    {
+      account: {
+        id: "ACCO_67890",
+      },
+      amount: {
+        value: 4000,
+      },
+    },
+  ],
+}
+
 export const getQrCode = async (req: Request, res: Response) => {
   try {
     const order = req.body
@@ -19,11 +47,18 @@ export const getQrCode = async (req: Request, res: Response) => {
     if (dataCheck.ok) {
       // ...
       await axios
-        .post(pbUrl, order)
+        .post(pbUrl, {
+          ...order,
+          splits,
+        })
         .then((response) => {
           const info = response.data
 
           if (info) {
+            registerCheckout()
+
+            console.log(info)
+            
             res.status(200).json({
               ok: true,
               data: info,
@@ -43,9 +78,10 @@ export const getQrCode = async (req: Request, res: Response) => {
           })
         })
     } else {
-      const { fields } = dataCheck
-
-      res.status(404).json({ errors: fields })
+      res.status(400).json({
+        ok: false,
+        error: "Erro ao carregar o qrcode. Tente novamente mais tarde",
+      })
     }
   } catch (error) {
     res.status(400).json({ received: "false" })
