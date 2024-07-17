@@ -10,9 +10,7 @@ dotenv.config()
 axios.defaults.headers.Authorization = process.env.pbToken as string
 const pbUrl = process.env.pbUrl as string
 
-const registerCheckout = async () => {
-  // ...
-}
+const fiveMinutes = 5 * 60 * 1000
 
 const splits = {
   method: "FIXED",
@@ -38,6 +36,34 @@ const splits = {
   ],
 }
 
+const registerCheckout = async (order: any, pagOrder: any) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const checkoutObj = {
+        reference_id: "ORDE_4070E517-5566-403D-950E-CCB80AE27DAF",
+        expiration_date: new Date(
+          new Date(pagOrder.created_at).getTime() + fiveMinutes
+        ).toISOString(),
+        items: order.items ?? [],
+        payment_methods: [{ type: "PIX" }],
+        notification_urls: [process.env.thisUrl],
+        payment_notification_urls: [process.env.thisUrl],
+      }
+
+      let checkout: any = {}
+
+      await axios.post("/checkouts", checkoutObj).then((res) => {
+        console.log("\n\n----------\nCheckout response:\n", res.data)
+        checkout = res.data
+      })
+
+      resolve(checkout)
+    } catch (error) {
+      reject(false)
+    }
+  })
+}
+
 export const getQrCode = async (req: Request, res: Response) => {
   try {
     const order = req.body
@@ -51,14 +77,12 @@ export const getQrCode = async (req: Request, res: Response) => {
           ...order,
           splits,
         })
-        .then((response) => {
+        .then(async (response) => {
           const info = response.data
 
           if (info) {
-            registerCheckout()
+            await registerCheckout(order, info)
 
-            console.log(info)
-            
             res.status(200).json({
               ok: true,
               data: info,
