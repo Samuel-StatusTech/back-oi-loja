@@ -40,7 +40,7 @@ const registerCheckout = async (order: any, pagOrder: any) => {
   return new Promise(async (resolve, reject) => {
     try {
       const checkoutObj = {
-        reference_id: "ORDE_4070E517-5566-403D-950E-CCB80AE27DAF",
+        reference_id: order.id,
         expiration_date: new Date(
           new Date(pagOrder.created_at).getTime() + fiveMinutes
         ).toISOString(),
@@ -52,14 +52,13 @@ const registerCheckout = async (order: any, pagOrder: any) => {
 
       let checkout: any = {}
 
-      await axios.post("/checkouts", checkoutObj).then((res) => {
-        console.log("\n\n----------\nCheckout response:\n", res.data)
+      await axios.post(`${pbUrl}/checkouts`, checkoutObj).then((res) => {
         checkout = res.data
       })
 
       resolve(checkout)
     } catch (error) {
-      reject(false)
+      reject(error)
     }
   })
 }
@@ -73,7 +72,7 @@ export const getQrCode = async (req: Request, res: Response) => {
     if (dataCheck.ok) {
       // ...
       await axios
-        .post(pbUrl, {
+        .post(`${pbUrl}/orders`, {
           ...order,
           splits,
         })
