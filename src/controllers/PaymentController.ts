@@ -93,11 +93,10 @@ export const getQrCode = async (req: Request, res: Response) => {
             })
           }
         })
-        .catch((err: AxiosError) => {
+        .catch(() => {
           res.status(400).json({
             ok: false,
             error: "Erro ao carregar o qrcode. Tente novamente mais tarde",
-            description: err,
           })
         })
     } else {
@@ -123,7 +122,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
 
       const message = getMessage(status)
 
-      const data = { status, amount, message }
+      const data = { status, amount, message, orderId, code: payment.id }
 
       // socket.emit...
       // filter by socket.id
