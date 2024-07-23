@@ -18,16 +18,17 @@ const splits = {
     // master
     {
       account: {
-        id: "ACCO_12345",
+        id: "ACCO_84992854-BA78-488E-A091-A3731D5BC242",
       },
       amount: {
-        value: 6000,
+        value: 700,
       },
     },
     // client
     {
       account: {
-        id: "ACCO_67890",
+        id: "ACCO_6D4BB711-CC33-4F63-AA95-287F093DAED7",
+        // id: "ACCO_5D46BA71-75EB-4AFF-9386-4BC82D4BD391",
       },
       amount: {
         value: 4000,
@@ -74,7 +75,8 @@ export const getQrCode = async (req: Request, res: Response) => {
       await axios
         .post(`${pbUrl}/orders`, {
           ...order,
-          splits,
+          qr_codes: [{ ...order.qr_codes[0] }],
+          notification_urls: [process.env.thisUrl],
         })
         .then(async (response) => {
           const info = response.data
@@ -93,10 +95,12 @@ export const getQrCode = async (req: Request, res: Response) => {
             })
           }
         })
-        .catch(() => {
+        .catch((err: AxiosError) => {
+          console.log(err)
           res.status(400).json({
             ok: false,
             error: "Erro ao carregar o qrcode. Tente novamente mais tarde",
+            err,
           })
         })
     } else {
