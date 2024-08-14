@@ -12,7 +12,7 @@ dotenv.config()
 const app: Express = express()
 const port = process.env.PORT || 8080
 
-app.use(cors())
+app.use(cors({ origin: "*" }))
 app.use(bodyParser.json())
 
 app.use("/api", routes)
@@ -25,10 +25,6 @@ const server = createServer(app)
 
 server.listen(port)
 
-export const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-})
+export const io = new Server(server, { cors: { origin: "*" } })
 
 export default app
