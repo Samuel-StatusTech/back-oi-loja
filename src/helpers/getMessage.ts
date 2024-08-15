@@ -1,7 +1,8 @@
 const messages = {
-  paid: "Pagamento recebido. Veja sua compra",
+  approved: "Pagamento recebido. Veja sua compra",
+  pending: "Processando pagamento.",
   waiting: "Aguardando pagamento.",
-  declined: "Pagamento não autorizado",
+  denied: "Pagamento não autorizado",
   expired: "Tempo esgotado. Gerando novo ticket..",
 }
 

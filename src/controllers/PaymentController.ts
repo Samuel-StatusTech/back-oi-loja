@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 import { io } from "../app"
 import { getMessage } from "../helpers/getMessage"
 import { Payment, MercadoPagoConfig } from "mercadopago"
+import axios from "axios"
 
 dotenv.config()
 
@@ -51,23 +52,59 @@ export const getQrCode = async (req: Request, res: Response) => {
 
 export const orderUpdate = async (req: Request, res: Response) => {
   try {
-    const order = req.body
+    const orderData = req.body
 
-    if (order.charges.length > 0) {
-      const payment = order.charges[0]
-      const orderId = order.reference_id
-      const status = payment.status
-      const amount = payment.amount.value
+    const updateId = orderData.data.id
 
-      const message = getMessage(status)
+    const sockets = await io.fetchSockets()
 
-      const data = { status, amount, message, orderId, code: payment.id }
+    await axios
+      .get(`https://api.mercadopago.com/v1/payments/${updateId}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.mpAToken}`,
+        },
+      })
+      .then((response) => {
+        const order = response.data
 
-      const sockets = await io.fetchSockets()
-      const client = sockets.find((s) => s.id === orderId)
+        const orderId = order.transaction_details.transaction_id
+        const sId = order.metadata.c_code
 
-      if (client) client.emit("orderUpdate", data)
-    }
+        const client = sockets.find((s) => s.id === sId)
+
+        if (
+          order?.transaction_details?.total_paid_amount ===
+          order.transaction_amount
+        ) {
+          const pmt = order.transaction_details
+          const status = order.status
+          const amount = pmt.total_paid_amount
+
+          const message = getMessage(status)
+
+          const data = {
+            status,
+            amount,
+            message,
+            sId,
+            orderId,
+            code: pmt.id,
+          }
+
+          if (client) client.emit("orderUpdate", data)
+        }
+      })
+      .catch((err) => {
+        const data = {
+          status: "denied",
+          message: getMessage("declined"),
+          updateId,
+          code: null,
+        }
+
+        const client = sockets.find((s) => s.id === updateId)
+        if (client) client.emit("orderUpdate", data)
+      })
 
     res.status(200).json({ ok: true })
   } catch (error) {
