@@ -70,7 +70,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
         const orderId = order.transaction_details.transaction_id
         const sId = order.metadata.c_code
 
-        const client = sockets.find((s) => s.id === sId)
+        const client = sockets.find((s: any) => s.id === sId)
 
         if (
           order?.transaction_details?.total_paid_amount ===
@@ -102,7 +102,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
           code: null,
         }
 
-        const client = sockets.find((s) => s.id === updateId)
+        const client = sockets.find((s: any) => s.id === updateId)
         if (client) client.emit("orderUpdate", data)
       })
 
