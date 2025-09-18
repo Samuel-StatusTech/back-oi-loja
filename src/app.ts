@@ -31,10 +31,31 @@ export const io = new Server(server, {
   allowEIO3: true,
 })
 
+export const formatRoomName = (socketId: string) => `webstore_order-${socketId}`
+
 io.on("connection", (socket: any) => {
-  // console.log(Object.keys(io.sockets.connected))
-  socket.emit("plugged", socket.id);
-});
+
+
+  // Create and join room for payment
+  socket.join(formatRoomName(socket.id))
+
+  socket.on(
+    "rejoinPaymentSession",
+    (pendingPayment: { paymentId: string; oldSocketId: string }) => {
+      // Verificar se o paymentId é válido
+      // ...
+
+      // Adicionar o novo socket à sala do pagamento
+      socket.leave(formatRoomName(socket.id))
+      socket.join(formatRoomName(pendingPayment.oldSocketId))
+
+      // O servidor agora pode continuar a enviar atualizações para esta "sala"
+      // usando io.to(`payment-${paymentId}`).emit(...)
+    }
+  )
+
+  socket.emit("plugged", socket.id)
+})
 
 io.on("connect_error", (err: any) => {
   console.log(err)

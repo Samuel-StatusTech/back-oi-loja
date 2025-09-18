@@ -1,6 +1,6 @@
 import { Request, Response } from "express"
 import dotenv from "dotenv"
-import { io } from "../app"
+import { formatRoomName, io } from "../app"
 import { getMessage } from "../helpers/getMessage"
 import { Payment, MercadoPagoConfig } from "mercadopago"
 import axios from "axios"
@@ -53,10 +53,18 @@ export const getQrCode = async (req: Request, res: Response) => {
 export const orderUpdate = async (req: Request, res: Response) => {
   try {
     const orderData = req.body
-
     const updateId = orderData.data.id
 
-    const sockets = await io.fetchSockets()
+    const sockets = await io.sockets.sockets
+
+    const { devMessage } = orderData
+
+    if (devMessage) {
+      const client = sockets[updateId]
+
+      if (client) client.emit("orderUpdate", { devMessage })
+      else io.to(formatRoomName(updateId)).emit("orderUpdate", { devMessage })
+    }
 
     await axios
       .get(`https://api.mercadopago.com/v1/payments/${updateId}`, {
@@ -70,7 +78,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
         const orderId = order.transaction_details.transaction_id
         const sId = order.metadata.c_code
 
-        const client = sockets.find((s: any) => s.id === sId)
+        const client = sockets[sId]
 
         if (
           order?.transaction_details?.total_paid_amount ===
@@ -92,6 +100,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
           }
 
           if (client) client.emit("orderUpdate", data)
+          else io.to(formatRoomName(sId)).emit("orderUpdate", { devMessage })
         }
       })
       .catch((err) => {
@@ -102,12 +111,14 @@ export const orderUpdate = async (req: Request, res: Response) => {
           code: null,
         }
 
-        const client = sockets.find((s: any) => s.id === updateId)
+        const client = sockets[updateId]
         if (client) client.emit("orderUpdate", data)
+        else io.to(formatRoomName(updateId)).emit("orderUpdate", { devMessage })
       })
 
     res.status(200).json({ ok: true })
   } catch (error) {
+    console.log("Error", error)
     res.status(400).json({ received: "false" })
   }
 }
