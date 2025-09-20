@@ -34,23 +34,13 @@ export const io = new Server(server, {
 export const formatRoomName = (socketId: string) => `webstore_order-${socketId}`
 
 io.on("connection", (socket: any) => {
-
-
-  // Create and join room for payment
   socket.join(formatRoomName(socket.id))
 
   socket.on(
     "rejoinPaymentSession",
     (pendingPayment: { paymentId: string; oldSocketId: string }) => {
-      // Verificar se o paymentId é válido
-      // ...
-
-      // Adicionar o novo socket à sala do pagamento
       socket.leave(formatRoomName(socket.id))
       socket.join(formatRoomName(pendingPayment.oldSocketId))
-
-      // O servidor agora pode continuar a enviar atualizações para esta "sala"
-      // usando io.to(`payment-${paymentId}`).emit(...)
     }
   )
 

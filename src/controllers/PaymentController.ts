@@ -52,19 +52,14 @@ export const getQrCode = async (req: Request, res: Response) => {
 
 export const orderUpdate = async (req: Request, res: Response) => {
   try {
-    const orderData = req.body
-    const updateId = orderData.data.id
+    const orderInfo = req.body
+    const orderData = orderInfo.data
+
+    if (!orderData) return res.status(200).json({ received: "false" })
+
+    const updateId = orderData.id
 
     const sockets = await io.sockets.sockets
-
-    const { devMessage } = orderData
-
-    if (devMessage) {
-      const client = sockets[updateId]
-
-      if (client) client.emit("orderUpdate", { devMessage })
-      else io.to(formatRoomName(updateId)).emit("orderUpdate", { devMessage })
-    }
 
     await axios
       .get(`https://api.mercadopago.com/v1/payments/${updateId}`, {
@@ -73,34 +68,38 @@ export const orderUpdate = async (req: Request, res: Response) => {
         },
       })
       .then((response) => {
-        const order = response.data
+        try {
+          const order = response.data
 
-        const orderId = order.transaction_details.transaction_id
-        const sId = order.metadata.c_code
+          const orderId = order.transaction_details.transaction_id
+          const sId = order.metadata.cCode ?? order.metadata.c_code
 
-        const client = sockets[sId]
+          const client = sockets[sId]
 
-        if (
-          order?.transaction_details?.total_paid_amount ===
-          order.transaction_amount
-        ) {
-          const pmt = order.transaction_details
-          const status = order.status
-          const amount = pmt.total_paid_amount
+          if (
+            order?.transaction_details?.total_paid_amount ===
+            order.transaction_amount
+          ) {
+            const pmt = order.transaction_details
+            const status = order.status
+            const amount = pmt.total_paid_amount
 
-          const message = getMessage(status)
+            const message = getMessage(status)
 
-          const data = {
-            status,
-            amount,
-            message,
-            sId,
-            orderId,
-            code: pmt.id,
+            const data = {
+              status,
+              amount,
+              message,
+              sId,
+              orderId,
+              code: pmt.id,
+            }
+
+            if (client) client.emit("orderUpdate", data)
+            else io.to(formatRoomName(sId)).emit("orderUpdate", data)
           }
-
-          if (client) client.emit("orderUpdate", data)
-          else io.to(formatRoomName(sId)).emit("orderUpdate", { devMessage })
+        } catch (er: any) {
+          throw new Error(er.message)
         }
       })
       .catch((err) => {
@@ -113,12 +112,13 @@ export const orderUpdate = async (req: Request, res: Response) => {
 
         const client = sockets[updateId]
         if (client) client.emit("orderUpdate", data)
-        else io.to(formatRoomName(updateId)).emit("orderUpdate", { devMessage })
+        else io.to(formatRoomName(updateId)).emit("orderUpdate", data)
+
+        throw new Error(err.message)
       })
 
     res.status(200).json({ ok: true })
   } catch (error) {
-    console.log("Error", error)
     res.status(400).json({ received: "false" })
   }
 }
