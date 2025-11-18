@@ -41,6 +41,10 @@ io.on("connection", (socket: any) => {
     (pendingPayment: { paymentId: string; oldSocketId: string }) => {
       socket.leave(formatRoomName(socket.id))
       socket.join(formatRoomName(pendingPayment.oldSocketId))
+
+      io.to(formatRoomName(pendingPayment.oldSocketId)).emit("rejoined", {
+        room: formatRoomName(pendingPayment.oldSocketId),
+      })
     }
   )
 
